@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мой Telegram App</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>✨ Моё Telegram Mini App</h1>
+        
+        <div class="user-card">
+            <h3>👤 Информация о пользователе:</h3>
+            <p><strong>Имя:</strong> <span id="user-name">Загрузка...</span></p>
+            <p><strong>ID:</strong> <span id="user-id">...</span></p>
+            <p><strong>Username:</strong> <span id="user-username">...</span></p>
+            <p><strong>Язык:</strong> <span id="user-language">...</span></p>
+            <p><strong>Тема:</strong> <span id="user-theme" class="theme-badge">...</span></p>
+        </div>
+        
+        <div class="input-section">
+            <label for="user-input"><strong>Введите текст для отправки боту:</strong></label>
+            <input type="text" id="user-input" class="input-field" 
+                   placeholder="Напишите что-нибудь здесь...">
+        </div>
+        
+        <button id="btn-send" class="btn btn-primary">
+            📤 Отправить данные в Telegram
+        </button>
+        <button id="btn-alert" class="btn btn-secondary">
+            👋 Показать тестовое уведомление
+        </button>
+        <button id="btn-close" class="btn btn-secondary">
+            ❌ Закрыть приложение
+        </button>
+        
+        <div id="app-alert" class="alert"></div>
+    </div>
+    
+    <script src="app.js"></script>
+</body>
+</html>
