@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🤖 Telegram Parser Mini App</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="manifest" href="manifest.json">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="user-info">
+                <img id="user-avatar" src="" alt="User Avatar" class="avatar">
+                <div>
+                    <h2 id="user-name">Пользователь</h2>
+                    <p id="user-status" class="status online">🟢 Онлайн</p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button id="theme-toggle" class="icon-btn">🌙</button>
+                <button id="refresh-btn" class="icon-btn">🔄</button>
+            </div>
+        </header>
+
+        <!-- Main Navigation -->
+        <nav class="main-nav">
+            <button class="nav-btn active" data-section="parse">🚀 Парсинг</button>
+            <button class="nav-btn" data-section="results">📁 Результаты</button>
+            <button class="nav-btn" data-section="stats">📊 Статистика</button>
+            <button class="nav-btn" data-section="settings">⚙️ Настройки</button>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Parsing Section -->
+            <section id="parse-section" class="section active">
+                <div class="section-header">
+                    <h1>🚀 Парсинг группы</h1>
+                    <p class="section-subtitle">Соберите информацию об участниках группы</p>
+                </div>
+
+                <div class="input-group">
+                    <label for="group-link">Ссылка на группу:</label>
+                    <div class="input-with-button">
+                        <input 
+                            type="text" 
+                            id="group-link" 
+                            placeholder="@username или https://t.me/..."
+                            autocomplete="off"
+                        >
+                        <button id="paste-btn" class="small-btn">📋 Вставить</button>
+                    </div>
+                    <div class="link-examples">
+                        <small>Примеры: @telegram, https://t.me/telegram</small>
+                    </div>
+                </div>
+
+                <div class="parsing-options">
+                    <h3>📋 Параметры парсинга:</h3>
+                    
+                    <div class="checkbox-group">
+                        <label class="checkbox">
+                            <input type="checkbox" id="parse-admins" checked>
+                            <span>⚡ Администраторы</span>
+                        </label>
+                        <label class="checkbox">
+                            <input type="checkbox" id="parse-bots" checked>
+                            <span>🤖 Боты</span>
+                        </label>
+                        <label class="checkbox">
+                            <input type="checkbox" id="parse-premium" checked>
+                            <span>⭐ Premium пользователи</span>
+                        </label>
+                        <label class="checkbox">
+                            <input type="checkbox" id="parse-regular" checked>
+                            <span>👤 Обычные пользователи</span>
+                        </label>
+                        <label class="checkbox">
+                            <input type="checkbox" id="parse-no-username" checked>
+                            <span>🚫 Без username</span>
+                        </label>
+                    </div>
+
+                    <div class="slider-group">
+                        <label for="delay-slider">Задержка между запросами (сек):</label>
+                        <input type="range" id="delay-slider" min="0" max="5" step="0.5" value="1">
+                        <span id="delay-value">1.0 сек</span>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button id="start-parse-btn" class="primary-btn">
+                        🚀 Начать парсинг
+                    </button>
+                    <button id="cancel-parse-btn" class="secondary-btn" disabled>
+                        ⏹️ Остановить
+                    </button>
+                </div>
+
+                <!-- Progress -->
+                <div id="progress-section" class="hidden">
+                    <div class="progress-header">
+                        <h3>📊 Прогресс парсинга</h3>
+                        <span id="progress-percent">0%</span>
+                    </div>
+                    
+                    <div class="progress-bar">
+                        <div id="progress-fill" class="progress-fill"></div>
+                    </div>
+
+                    <div class="progress-details">
+                        <div class="progress-item">
+                            <span class="label">Статус:</span>
+                            <span id="parse-status" class="value">Ожидание...</span>
+                        </div>
+                        <div class="progress-item">
+                            <span class="label">Найдено:</span>
+                            <span id="members-found" class="value">0</span>
+                        </div>
+                        <div class="progress-item">
+                            <span class="label">Время:</span>
+                            <span id="parse-time" class="value">00:00</span>
+                        </div>
+                        <div class="progress-item">
+                            <span class="label">Скорость:</span>
+                            <span id="parse-speed" class="value">0/сек</span>
+                        </div>
+                    </div>
+
+                    <div id="real-time-stats" class="real-time-stats">
+                        <div class="stat-category">
+                            <span class="stat-icon">👑</span>
+                            <span class="stat-count" id="owner-count">0</span>
+                        </div>
+                        <div class="stat-category">
+                            <span class="stat-icon">⚡</span>
+                            <span class="stat-count" id="admins-count">0</span>
+                        </div>
+                        <div class="stat-category">
+                            <span class="stat-icon">🤖</span>
+                            <span class="stat-count" id="bots-count">0</span>
+                        </div>
+                        <div class="stat-category">
+                            <span class="stat-icon">⭐</span>
+                            <span class="stat-count" id="premium-count">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Last Results -->
+                <div id="last-results" class="last-results hidden">
+                    <h3>📋 Последние результаты:</h3>
+                    <div id="results-list"></div>
+                </div>
+            </section>
+
+            <!-- Results Section -->
+            <section id="results-section" class="section">
+                <div class="section-header">
+                    <h1>📁 Мои результаты</h1>
+                    <p class="section-subtitle">История всех парсингов</p>
+                </div>
+
+                <div class="results-controls">
+                    <div class="search-box">
+                        <input type="text" id="search-input" placeholder="Поиск по названию группы...">
+                        <button id="search-btn" class="icon-btn">🔍</button>
+                    </div>
+                    <div class="filter-buttons">
+                        <button class="filter-btn active" data-filter="all">Все</button>
+                        <button class="filter-btn" data-filter="today">Сегодня</button>
+                        <button class="filter-btn" data-filter="week">Неделя</button>
+                        <button class="filter-btn" data-filter="month">Месяц</button>
+                    </div>
+                </div>
+
+                <div id="results-container" class="results-container">
+                    <!-- Results will be loaded here -->
+                    <div class="loading">Загрузка результатов...</div>
+                </div>
+
+                <div class="results-actions">
+                    <button id="export-all-btn" class="secondary-btn">
+                        📤 Экспорт всех
+                    </button>
+                    <button id="clear-results-btn" class="danger-btn">
+                        🗑️ Очистить все
+                    </button>
+                </div>
+            </section>
+
+            <!-- Statistics Section -->
+            <section id="stats-section" class="section">
+                <div class="section-header">
+                    <h1>📊 Статистика</h1>
+                    <p class="section-subtitle">Аналитика и метрики</p>
+                </div>
+
+                <div class="stats-overview">
+                    <div class="stat-card">
+                        <div class="stat-icon">📊</div>
+                        <div class="stat-info">
+                            <h3 id="total-parsed">0</h3>
+                            <p>Всего спарсено</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">👥</div>
+                        <div class="stat-info">
+                            <h3 id="total-members">0</h3>
+                            <p>Участников</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">📈</div>
+                        <div class="stat-info">
+                            <h3 id="avg-coverage">0%</h3>
+                            <p>Средний охват</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="charts-container">
+                    <div class="chart-box">
+                        <h3>📅 Активность по дням</h3>
+                        <canvas id="activity-chart"></canvas>
+                    </div>
+                    <div class="chart-box">
+                        <h3>🎯 Распределение по типам</h3>
+                        <canvas id="types-chart"></canvas>
+                    </div>
+                </div>
+
+                <div class="insights">
+                    <h3>💡 Инсайты</h3>
+                    <div id="insights-list" class="insights-list">
+                        <div class="insight-item">
+                            <span class="insight-icon">📊</span>
+                            <span class="insight-text">Загружаем аналитику...</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Settings Section -->
+            <section id="settings-section" class="section">
+                <div class="section-header">
+                    <h1>⚙️ Настройки</h1>
+                    <p class="section-subtitle">Настройки приложения</p>
+                </div>
+
+                <div class="settings-group">
+                    <h3>🔧 Основные настройки</h3>
+                    
+                    <div class="setting-item">
+                        <label class="setting-label">
+                            <span>📁 Автосохранение результатов</span>
+                            <label class="switch">
+                                <input type="checkbox" id="auto-save" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </label>
+                        <p class="setting-description">Автоматически сохранять все результаты парсинга</p>
+                    </div>
+
+                    <div class="setting-item">
+                        <label class="setting-label">
+                            <span>🔔 Уведомления</span>
+                            <label class="switch">
+                                <input type="checkbox" id="notifications" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </label>
+                        <p class="setting-description">Получать уведомления о завершении парсинга</p>
+                    </div>
+
+                    <div class="setting-item">
+                        <label class="setting-label">
+                            <span>🌙 Темная тема</span>
+                            <label class="switch">
+                                <input type="checkbox" id="dark-mode">
+                                <span class="slider"></span>
+                            </label>
+                        </label>
+                        <p class="setting-description">Использовать темную тему оформления</p>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <h3>🛡️ Безопасность</h3>
+                    
+                    <div class="setting-item">
+                        <label for="session-timeout">⏰ Таймаут сессии (минут):</label>
+                        <select id="session-timeout" class="select-input">
+                            <option value="15">15</option>
+                            <option value="30" selected>30</option>
+                            <option value="60">60</option>
+                            <option value="120">120</option>
+                        </select>
+                    </div>
+
+                    <div class="setting-item">
+                        <label class="setting-label">
+                            <span>🔒 Безопасное подключение</span>
+                            <label class="switch">
+                                <input type="checkbox" id="secure-connection" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </label>
+                        <p class="setting-description">Использовать HTTPS для всех запросов</p>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <h3>💾 Данные</h3>
+                    
+                    <div class="setting-item">
+                        <button id="export-data-btn" class="secondary-btn">
+                            📤 Экспорт всех данных
+                        </button>
+                        <p class="setting-description">Скачать все результаты в ZIP архиве</p>
+                    </div>
+
+                    <div class="setting-item">
+                        <button id="clear-data-btn" class="danger-btn">
+                            🗑️ Очистить кэш
+                        </button>
+                        <p class="setting-description">Удалить все локальные данные</p>
+                    </div>
+
+                    <div class="setting-item">
+                        <button id="reset-settings-btn" class="secondary-btn">
+                            🔄 Сбросить настройки
+                        </button>
+                        <p class="setting-description">Вернуть настройки по умолчанию</p>
+                    </div>
+                </div>
+
+                <div class="app-info">
+                    <h3>ℹ️ Информация о приложении</h3>
+                    <div class="info-item">
+                        <span>Версия:</span>
+                        <span id="app-version">1.0.0</span>
+                    </div>
+                    <div class="info-item">
+                        <span>Telegram API:</span>
+                        <span id="api-status" class="status online">🟢 Доступен</span>
+                    </div>
+                    <div class="info-item">
+                        <span>Последнее обновление:</span>
+                        <span id="last-update">-</span>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Bottom Navigation -->
+        <div class="bottom-nav">
+            <button class="bottom-nav-btn" data-section="parse">
+                <span class="nav-icon">🚀</span>
+                <span class="nav-text">Парсинг</span>
+            </button>
+            <button class="bottom-nav-btn" data-section="results">
+                <span class="nav-icon">📁</span>
+                <span class="nav-text">Результаты</span>
+            </button>
+            <button class="bottom-nav-btn" data-section="stats">
+                <span class="nav-icon">📊</span>
+                <span class="nav-text">Статистика</span>
+            </button>
+            <button class="bottom-nav-btn" data-section="settings">
+                <span class="nav-icon">⚙️</span>
+                <span class="nav-text">Настройки</span>
+            </button>
+        </div>
+
+        <!-- Floating Action Button -->
+        <button id="fab" class="fab">
+            <span class="fab-icon">+</span>
+        </button>
+
+        <!-- Modal Windows -->
+        <div id="result-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modal-title">Результат парсинга</h3>
+                    <button id="close-modal" class="close-modal">&times;</button>
+                </div>
+                <div class="modal-body" id="modal-body">
+                    <!-- Modal content will be loaded here -->
+                </div>
+                <div class="modal-footer">
+                    <button id="export-modal-btn" class="primary-btn">📥 Экспорт</button>
+                    <button id="share-modal-btn" class="secondary-btn">📤 Поделиться</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Notifications -->
+        <div id="toast-container" class="toast-container"></div>
+
+        <!-- Loading Overlay -->
+        <div id="loading-overlay" class="loading-overlay hidden">
+            <div class="loading-spinner"></div>
+            <p class="loading-text">Загрузка...</p>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
