@@ -3,42 +3,369 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Мой Telegram App</title>
-    <link rel="stylesheet" href="style.css">
+    <title>FocusGoal Mini App</title>
+    <link rel="stylesheet" href="/static/style.css">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
     <div class="container">
-        <h1>✨ Моё Telegram Mini App</h1>
-        
-        <div class="user-card">
-            <h3>👤 Информация о пользователе:</h3>
-            <p><strong>Имя:</strong> <span id="user-name">Загрузка...</span></p>
-            <p><strong>ID:</strong> <span id="user-id">...</span></p>
-            <p><strong>Username:</strong> <span id="user-username">...</span></p>
-            <p><strong>Язык:</strong> <span id="user-language">...</span></p>
-            <p><strong>Тема:</strong> <span id="user-theme" class="theme-badge">...</span></p>
-        </div>
-        
-        <div class="input-section">
-            <label for="user-input"><strong>Введите текст для отправки боту:</strong></label>
-            <input type="text" id="user-input" class="input-field" 
-                   placeholder="Напишите что-нибудь здесь...">
-        </div>
-        
-        <button id="btn-send" class="btn btn-primary">
-            📤 Отправить данные в Telegram
-        </button>
-        <button id="btn-alert" class="btn btn-secondary">
-            👋 Показать тестовое уведомление
-        </button>
-        <button id="btn-close" class="btn btn-secondary">
-            ❌ Закрыть приложение
-        </button>
-        
-        <div id="app-alert" class="alert"></div>
+        <!-- Хедер с пользовательской информацией -->
+        <header class="app-header">
+            <div class="header-content">
+                <h1 class="app-title">🎯 FocusGoal</h1>
+                <div class="user-profile">
+                    <div class="xp-display">
+                        <div class="xp-value">{{ user.xp }} XP</div>
+                        <div class="level-badge">Уровень {{ user.level }}</div>
+                    </div>
+                    <div class="level-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: {{ level_progress }}%"></div>
+                        </div>
+                        <div class="progress-text">{{ level_progress|round }}% до след. уровня</div>
+                    </div>
+                </div>
+            </div>
+            <div class="header-stats">
+                <div class="stat-item">
+                    <div class="stat-value">{{ stats.goals.total|default(0) }}</div>
+                    <div class="stat-label">Целей</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">{{ stats.habits.total|default(0) }}</div>
+                    <div class="stat-label">Привычек</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">{{ stats.focus.total_sessions|default(0) }}</div>
+                    <div class="stat-label">Фокус-сессий</div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Быстрые действия -->
+        <section class="quick-actions-section">
+            <h2 class="section-title">⚡ Быстрые действия</h2>
+            <div class="actions-grid">
+                <button class="action-btn primary" onclick="createGoal()">
+                    <span class="btn-icon">🎯</span>
+                    <span class="btn-text">Новая цель</span>
+                </button>
+                <button class="action-btn secondary" onclick="createHabit()">
+                    <span class="btn-icon">🔄</span>
+                    <span class="btn-text">Новая привычка</span>
+                </button>
+                <button class="action-btn accent" onclick="startFocusSession()">
+                    <span class="btn-icon">🎮</span>
+                    <span class="btn-text">Фокус</span>
+                </button>
+                <button class="action-btn" onclick="showStats()">
+                    <span class="btn-icon">📊</span>
+                    <span class="btn-text">Статистика</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- Активные цели -->
+        <section class="goals-section">
+            <div class="section-header">
+                <h2 class="section-title">🎯 Мои цели</h2>
+                <span class="section-count">{{ goals|length }}</span>
+            </div>
+            
+            {% if goals %}
+            <div class="cards-grid">
+                {% for goal in goals %}
+                <div class="goal-card {% if goal.status == 'completed' %}completed{% endif %} priority-{{ goal.priority }}">
+                    <div class="card-header">
+                        <h3 class="goal-title">{{ goal.title }}</h3>
+                        <span class="priority-badge">{{ goal.priority }}</span>
+                    </div>
+                    
+                    {% if goal.description %}
+                    <p class="goal-description">{{ goal.description }}</p>
+                    {% endif %}
+                    
+                    <div class="card-footer">
+                        <div class="goal-meta">
+                            {% if goal.deadline %}
+                            <span class="deadline">
+                                📅 {{ goal.deadline[:10] }}
+                            </span>
+                            {% endif %}
+                            <span class="status">
+                                {% if goal.status == 'completed' %}✅ Выполнено{% else %}⏳ Активна{% endif %}
+                            </span>
+                        </div>
+                        
+                        {% if goal.status != 'completed' %}
+                        <button class="btn-complete" onclick="completeGoal({{ goal.id }})">
+                            ✅ Выполнено
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <div class="empty-icon">🎯</div>
+                <h3>Нет активных целей</h3>
+                <p>Создайте свою первую цель!</p>
+                <button class="btn-primary" onclick="createGoal()">Создать цель</button>
+            </div>
+            {% endif %}
+        </section>
+
+        <!-- Привычки -->
+        <section class="habits-section">
+            <div class="section-header">
+                <h2 class="section-title">🔄 Мои привычки</h2>
+                <span class="section-count">{{ habits|length }}</span>
+            </div>
+            
+            {% if habits %}
+            <div class="habits-list">
+                {% for habit in habits %}
+                <div class="habit-card">
+                    <div class="habit-info">
+                        <h3 class="habit-title">{{ habit.title }}</h3>
+                        <div class="habit-meta">
+                            <span class="frequency">📅 {{ habit.frequency }}</span>
+                            <span class="streak">🔥 {{ habit.streak }} дней</span>
+                        </div>
+                    </div>
+                    <button class="btn-track" onclick="trackHabit({{ habit.id }})">
+                        ✅ Отметить
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <div class="empty-icon">🔄</div>
+                <h3>Нет привычек</h3>
+                <p>Добавьте свою первую привычку!</p>
+                <button class="btn-secondary" onclick="createHabit()">Добавить привычку</button>
+            </div>
+            {% endif %}
+        </section>
+
+        <!-- Достижения -->
+        <section class="achievements-section">
+            <div class="section-header">
+                <h2 class="section-title">🏆 Достижения</h2>
+                <span class="section-count">{{ achievements|length }}</span>
+            </div>
+            
+            {% if achievements %}
+            <div class="achievements-grid">
+                {% for achievement in achievements %}
+                <div class="achievement-card">
+                    <div class="achievement-icon">{{ achievement.icon }}</div>
+                    <div class="achievement-info">
+                        <h4>{{ achievement.name }}</h4>
+                        <p>{{ achievement.description }}</p>
+                        <div class="achievement-date">
+                            📅 {{ achievement.unlocked_at[:10] }}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <div class="empty-icon">🏆</div>
+                <h3>Нет достижений</h3>
+                <p>Выполняйте цели, чтобы получать достижения!</p>
+            </div>
+            {% endif %}
+        </section>
+
+        <!-- Футер -->
+        <footer class="app-footer">
+            <div class="footer-actions">
+                <button class="footer-btn" onclick="refreshData()">
+                    🔄 Обновить
+                </button>
+                <button class="footer-btn" onclick="openStats()">
+                    📊 Статистика
+                </button>
+                <button class="footer-btn" onclick="closeApp()">
+                    ✕ Закрыть
+                </button>
+            </div>
+        </footer>
     </div>
-    
-    <script src="app.js"></script>
+
+    <!-- Скрипты -->
+    <script src="/static/main.js"></script>
+    <script>
+        // Инициализация Telegram Web App
+        let tg = null;
+        if (typeof Telegram !== 'undefined') {
+            tg = window.Telegram.WebApp;
+            tg.expand();
+            
+            // Настраиваем главную кнопку
+            tg.MainButton.setText("Закрыть");
+            tg.MainButton.onClick(() => tg.close());
+            tg.MainButton.show();
+            
+            // Получаем данные пользователя из Telegram
+            if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                const telegramUser = tg.initDataUnsafe.user;
+                console.log('Telegram user:', telegramUser);
+            }
+        }
+        
+        // Глобальные переменные
+        const userId = {{ user.id }};
+        
+        // Функции для работы с приложением
+        function createGoal() {
+            window.location.href = `/new_goal?user_id=${userId}`;
+        }
+        
+        function createHabit() {
+            const title = prompt('Введите название привычки:');
+            if (!title) return;
+            
+            fetch('/api/habits', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    user_id: userId,
+                    title: title,
+                    frequency: 'daily'
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    window.location.reload();
+                } else {
+                    alert('Ошибка: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Ошибка при создании привычки');
+            });
+        }
+        
+        function completeGoal(goalId) {
+            if (!confirm('Отметить цель как выполненную?')) return;
+            
+            fetch(`/api/goals/${goalId}/complete`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    user_id: userId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    window.location.reload();
+                } else {
+                    alert('Ошибка: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Ошибка при выполнении цели');
+            });
+        }
+        
+        function trackHabit(habitId) {
+            fetch(`/api/habits/${habitId}/track`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    user_id: userId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    window.location.reload();
+                } else {
+                    alert('Ошибка: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Ошибка при отметке привычки');
+            });
+        }
+        
+        function startFocusSession() {
+            const duration = prompt('Длительность фокус-сессии (минуты):', '25');
+            if (!duration || isNaN(duration)) return;
+            
+            fetch('/api/focus/start', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    user_id: userId,
+                    duration: duration
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    
+                    // Таймер для демонстрации
+                    setTimeout(() => {
+                        alert(`✅ Фокус-сессия завершена! +${duration * 2} XP начислено`);
+                    }, 3000); // 3 секунды вместо реальных минут
+                } else {
+                    alert('Ошибка: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Ошибка при запуске фокус-сессии');
+            });
+        }
+        
+        function showStats() {
+            window.location.href = `/stats?user_id=${userId}`;
+        }
+        
+        function openStats() {
+            showStats();
+        }
+        
+        function refreshData() {
+            window.location.reload();
+        }
+        
+        function closeApp() {
+            if (tg) {
+                tg.close();
+            } else {
+                alert('Приложение может быть закрыто только из Telegram');
+            }
+        }
+        
+        // Загружаем данные при старте
+        window.addEventListener('load', function() {
+            console.log('FocusGoal Mini App загружен');
+            console.log('User ID:', userId);
+        });
+    </script>
 </body>
 </html>
