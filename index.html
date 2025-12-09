@@ -3,25 +3,409 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FocusGoal Mini App</title>
-    <link rel="stylesheet" href="style.css">
+    <title>📊 Статистика бота</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: transform 0.3s;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .card h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .stat-item {
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .stat-item:last-child {
+            border-bottom: none;
+        }
+        
+        .stat-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+        
+        .stat-name {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .stat-value {
+            color: #333;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+        
+        .progress-bar {
+            height: 6px;
+            background: #f0f0f0;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        
+        .progress {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 3px;
+            transition: width 0.5s;
+        }
+        
+        .users-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .user-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px;
+            border-radius: 8px;
+            background: #f8f9fa;
+            margin-bottom: 10px;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .user-stats span {
+            background: #e9ecef;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            margin-left: 5px;
+        }
+        
+        .update-time {
+            text-align: center;
+            color: white;
+            opacity: 0.8;
+            font-size: 0.9rem;
+            margin-top: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="container">
-        <h1>🎯 FocusGoal</h1>
-        <div id="app">
-            <div class="section">
-                <h2>Мои цели</h2>
-                <ul id="goals-list"></ul>
+        <div class="header">
+            <h1>📊 Статистика Telegram бота</h1>
+            <p>Данные обновляются в реальном времени</p>
+        </div>
+        
+        <div class="stats-grid">
+            <!-- Глобальная статистика -->
+            <div class="card">
+                <h2>🌐 Глобальная статистика</h2>
+                <div id="global-stats">
+                    <!-- Данные будут загружены через JavaScript -->
+                    <div class="stat-item">
+                        <div class="stat-label">
+                            <span class="stat-name">Всего пользователей</span>
+                            <span class="stat-value" id="total-users">0</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress" id="users-progress" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">
+                            <span class="stat-name">Всего сообщений</span>
+                            <span class="stat-value" id="total-messages">0</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress" id="messages-progress" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">
+                            <span class="stat-name">Выполнено заданий</span>
+                            <span class="stat-value" id="total-tasks">0</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress" id="tasks-progress" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">
+                            <span class="stat-name">Обновлено</span>
+                            <span class="stat-value" id="updated-at">-</span>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="section">
-                <h2>Новая цель</h2>
-                <input type="text" id="goal-title" placeholder="Название цели">
-                <textarea id="goal-desc" placeholder="Описание"></textarea>
-                <button onclick="createGoal()">➕ Создать цель</button>
+            
+            <!-- Активные пользователи -->
+            <div class="card">
+                <h2>👥 Активные пользователи</h2>
+                <div class="users-list" id="users-list">
+                    <!-- Список пользователей будет загружен через JavaScript -->
+                    <p style="text-align: center; color: #666;">Загрузка...</p>
+                </div>
+            </div>
+            
+            <!-- Диаграмма активности -->
+            <div class="card">
+                <h2>📈 Активность по часам</h2>
+                <canvas id="activity-chart" width="400" height="200"></canvas>
             </div>
         </div>
+        
+        <div class="update-time">
+            Последнее обновление: <span id="last-update">-</span>
+        </div>
     </div>
-    <script src="app.js"></script>
+
+    <!-- Firebase и Chart.js -->
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <script>
+        // Конфигурация Firebase
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        // Инициализация Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // Инициализация Chart.js
+        let activityChart = null;
+
+        // Функция форматирования даты
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleString('ru-RU');
+        }
+
+        // Функция обновления статистики
+        function updateStats() {
+            // Слушаем изменения в глобальной статистике
+            db.collection('stats').doc('global')
+                .onSnapshot((doc) => {
+                    if (doc.exists) {
+                        const data = doc.data();
+                        
+                        // Обновляем значения
+                        document.getElementById('total-users').textContent = data.total_users || 0;
+                        document.getElementById('total-messages').textContent = data.total_messages || 0;
+                        document.getElementById('total-tasks').textContent = data.total_tasks || 0;
+                        document.getElementById('updated-at').textContent = formatDate(data.updated_at);
+                        
+                        // Обновляем прогресс-бары
+                        const maxMessages = Math.max(data.total_messages || 0, 100);
+                        const maxTasks = Math.max(data.total_tasks || 0, 50);
+                        const maxUsers = Math.max(data.total_users || 0, 10);
+                        
+                        document.getElementById('users-progress').style.width = 
+                            Math.min((data.total_users || 0) / maxUsers * 100, 100) + '%';
+                        document.getElementById('messages-progress').style.width = 
+                            Math.min((data.total_messages || 0) / maxMessages * 100, 100) + '%';
+                        document.getElementById('tasks-progress').style.width = 
+                            Math.min((data.total_tasks || 0) / maxTasks * 100, 100) + '%';
+                        
+                        // Обновляем время последнего обновления
+                        document.getElementById('last-update').textContent = 
+                            new Date().toLocaleTimeString('ru-RU');
+                    }
+                });
+
+            // Слушаем изменения в пользователях
+            db.collection('users')
+                .where('is_active', '==', true)
+                .orderBy('last_active', 'desc')
+                .limit(10)
+                .onSnapshot((snapshot) => {
+                    const usersList = document.getElementById('users-list');
+                    usersList.innerHTML = '';
+                    
+                    snapshot.forEach((doc) => {
+                        const user = doc.data();
+                        const userElement = document.createElement('div');
+                        userElement.className = 'user-item';
+                        
+                        const firstLetter = user.first_name ? user.first_name[0].toUpperCase() : 'U';
+                        const userName = user.first_name || `User ${user.user_id.slice(0, 4)}`;
+                        
+                        userElement.innerHTML = `
+                            <div class="user-info">
+                                <div class="user-avatar">${firstLetter}</div>
+                                <div>
+                                    <div style="font-weight: bold;">${userName}</div>
+                                    <div style="font-size: 0.8rem; color: #666;">
+                                        @${user.username || 'без username'}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="user-stats">
+                                <span>📨 ${user.message_count || 0}</span>
+                                <span>✅ ${user.task_count || 0}</span>
+                            </div>
+                        `;
+                        
+                        usersList.appendChild(userElement);
+                    });
+                    
+                    if (snapshot.empty) {
+                        usersList.innerHTML = '<p style="text-align: center; color: #666;">Нет активных пользователей</p>';
+                    }
+                });
+
+            // Собираем данные для графика активности
+            updateActivityChart();
+        }
+
+        // Функция обновления графика активности
+        function updateActivityChart() {
+            const hours = Array.from({length: 24}, (_, i) => i);
+            
+            // В реальном проекте здесь бы был запрос к БД
+            // Для примера генерируем случайные данные
+            const activityData = hours.map(() => Math.floor(Math.random() * 100));
+            
+            const ctx = document.getElementById('activity-chart').getContext('2d');
+            
+            if (activityChart) {
+                activityChart.destroy();
+            }
+            
+            activityChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: hours.map(h => `${h}:00`),
+                    datasets: [{
+                        label: 'Активность',
+                        data: activityData,
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0,0,0,0.05)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: 'rgba(0,0,0,0.05)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Запуск обновления статистики
+        updateStats();
+
+        // Обновляем график каждые 5 минут
+        setInterval(updateActivityChart, 5 * 60 * 1000);
+
+        // Обновляем время каждую секунду
+        setInterval(() => {
+            document.getElementById('last-update').textContent = 
+                new Date().toLocaleTimeString('ru-RU');
+        }, 1000);
+    </script>
 </body>
 </html>
